@@ -91,6 +91,8 @@ public class App {
 		// TODO Auto-generated method stub
         int userId = currentUser.getUser().getId();
 
+        accountService.setAuthToken(currentUser.getToken());
+
         Account account = accountService.getAccountByUserId(userId);
         System.out.println("Your current balance is: $" + account.getBalance());
 
