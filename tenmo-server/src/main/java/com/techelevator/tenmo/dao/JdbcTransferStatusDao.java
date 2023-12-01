@@ -18,7 +18,7 @@ public class JdbcTransferStatusDao implements TransferStatusDao{
 
     @Override
     public TransferStatus getTransferStatusByDesc(String description) {
-        String sql = "SELECT transfer_status_id, transfer_status_desc FROM transfer_statuses WHERE transfer_status_desc = ?";
+        String sql = "SELECT transfer_status_id, transfer_status_desc FROM transfer_status WHERE transfer_status_desc = ?";
         SqlRowSet result = jdbcTemplate.queryForRowSet(sql, description);
         TransferStatus transferStatus = null;
 
@@ -32,7 +32,7 @@ public class JdbcTransferStatusDao implements TransferStatusDao{
 
     @Override
     public TransferStatus getTransferStatusById(int transferStatusId) {
-        String sql = "SELECT transfer_status_id, transfer_status_desc FROM transfer_statuses WHERE transfer_status_id = ?";
+        String sql = "SELECT transfer_status_id, transfer_status_desc FROM transfer_status WHERE transfer_status_id = ?";
         SqlRowSet result = jdbcTemplate.queryForRowSet(sql, transferStatusId);
         TransferStatus transferStatus = null;
 
