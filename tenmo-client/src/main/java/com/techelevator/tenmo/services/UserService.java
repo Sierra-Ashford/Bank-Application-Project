@@ -1,19 +1,18 @@
 package com.techelevator.tenmo.services;
 
-import com.techelevator.tenmo.model.Account;
 import com.techelevator.tenmo.model.User;
 import com.techelevator.util.BasicLogger;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClientResponseException;
 import org.springframework.web.client.RestTemplate;
 
-public class AccountService {
+public class UserService {
+    public String API_BASE_URL = "http://localhost:8080/users";
 
-    public String API_BASE_URL = "http://localhost:8080/accounts/";
-    public String API_BASE_URL2 = "http://localhost:8080/accountByUserId/";
     private final RestTemplate restTemplate = new RestTemplate();
 
     private String authToken = null;
@@ -26,31 +25,37 @@ public class AccountService {
     }
 
     /**
-     * Get Account by Account_id
+     * List all the users
      */
-    public Account getAccountById(int id) {
-        Account account = null;
-        try {
-            account = restTemplate.getForObject(API_BASE_URL + id, Account.class);
-        } catch (RestClientResponseException | ResourceAccessException e) {
-            BasicLogger.log(e.getMessage());
-        }
-        return account;
-    }
-
-    /**
-     * Get Account by User_id
-     */
-    public Account getAccountByUserId(int id) {
+    public User[] listUsers() {
         HttpHeaders headers = new HttpHeaders();
         headers.setBearerAuth(authToken);
         HttpEntity entity = new HttpEntity(headers);
-        Account account = null;
+        User[] users = null;
         try {
-            account = restTemplate.exchange(API_BASE_URL2 + id, HttpMethod.GET, entity, Account.class).getBody();
+            users = restTemplate.exchange(API_BASE_URL, HttpMethod.GET, entity, User[].class).getBody();
         } catch (RestClientResponseException | ResourceAccessException e) {
             BasicLogger.log(e.getMessage());
         }
-        return account;
+        return users;
     }
+    /**
+     * Get User by id
+     */
+    public User getUserById(int id) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setBearerAuth(authToken);
+        HttpEntity entity = new HttpEntity(headers);
+        User user = null;
+        try {
+            ResponseEntity<User> responseEntity
+                    = restTemplate.exchange(API_BASE_URL + "/" + id, HttpMethod.GET, entity, User.class);
+            user = responseEntity.getBody();
+        } catch (RestClientResponseException | ResourceAccessException e) {
+            BasicLogger.log(e.getMessage());
+        }
+        return user;
+
+    }
+
 }

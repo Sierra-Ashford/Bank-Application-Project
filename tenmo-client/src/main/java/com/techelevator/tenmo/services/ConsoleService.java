@@ -1,7 +1,8 @@
 package com.techelevator.tenmo.services;
 
 
-import com.techelevator.tenmo.model.UserCredentials;
+import com.techelevator.tenmo.App;
+import com.techelevator.tenmo.model.*;
 
 import java.math.BigDecimal;
 import java.util.Scanner;
@@ -68,6 +69,17 @@ public class ConsoleService {
         }
     }
 
+//    public BigDecimal promptForBigDecimal(String prompt) {
+//        System.out.print(prompt);
+//        while (true) {
+//            try {
+//                return new BigDecimal(scanner.nextLine());
+//            } catch (NumberFormatException e) {
+//                System.out.println("Please enter a decimal number.");
+//            }
+//        }
+//    }
+
     public BigDecimal promptForBigDecimal(String prompt) {
         System.out.print(prompt);
         while (true) {
@@ -78,6 +90,23 @@ public class ConsoleService {
             }
         }
     }
+//    public BigDecimal promptForBigDecimal(String prompt) {
+//        System.out.print(prompt);
+//        while (true) {
+//            try {
+//                BigDecimal userInput = new BigDecimal(scanner.nextLine());
+//
+//                // Check if the entered number is non-negative
+//                if (userInput.compareTo(BigDecimal.ZERO) >= 0) {
+//                    return userInput;
+//                } else {
+//                    System.out.println("Please enter a non-negative number.");
+//                }
+//            } catch (NumberFormatException e) {
+//                System.out.println("Please enter a valid number.");
+//            }
+//        }
+//    }
 
     public void pause() {
         System.out.println("\nPress Enter to continue...");
@@ -86,6 +115,28 @@ public class ConsoleService {
 
     public void printErrorMessage() {
         System.out.println("An error occurred. Check the log for details.");
+    }
+    public void printUsers(User[] users, AuthenticatedUser authenticatedUser) {
+        System.out.println("------------------");
+        System.out.println("Id  : Username");
+        System.out.println("------------------");
+        App app = new App();
+        for (User user : users) {
+            if (user.getId() != authenticatedUser.getUser().getId())
+            System.out.println(user.getId() + ": " + user.getUsername());
+        }
+        System.out.println();
+    }
+    public void printTransfers(Transfer[] transfers) {
+        System.out.println("------------------");
+        System.out.println("Transfer History");
+        System.out.println("------------------");
+        TransferType transferType;
+        for (Transfer transfer : transfers) {
+            System.out.println("From: " + transfer.getAccountFrom() +
+                    " To: " + transfer.getAccountTo() + " Transaction Type: " + transfer.getTransferTypeId() + " Amount: " + transfer.getAmount());
+        }
+        System.out.println();
     }
 
 }

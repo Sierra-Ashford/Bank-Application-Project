@@ -1,11 +1,9 @@
 package com.techelevator.tenmo;
 
-import com.techelevator.tenmo.model.Account;
-import com.techelevator.tenmo.model.AuthenticatedUser;
-import com.techelevator.tenmo.model.UserCredentials;
-import com.techelevator.tenmo.services.AccountService;
-import com.techelevator.tenmo.services.AuthenticationService;
-import com.techelevator.tenmo.services.ConsoleService;
+import com.techelevator.tenmo.model.*;
+import com.techelevator.tenmo.services.*;
+
+import java.math.BigDecimal;
 
 public class App {
 
@@ -13,9 +11,11 @@ public class App {
 
     private final ConsoleService consoleService = new ConsoleService();
     private final AuthenticationService authenticationService = new AuthenticationService(API_BASE_URL);
-    private AccountService accountService = new AccountService();
 
     private AuthenticatedUser currentUser;
+    private Transfer transfer;
+    private TransferType transferType;
+    private TransferStatus transferStatus;
 
     public static void main(String[] args) {
         App app = new App();
@@ -61,6 +61,12 @@ public class App {
         if (currentUser == null) {
             consoleService.printErrorMessage();
         }
+        userService.setAuthToken(currentUser.getToken());
+        userService.setCurrentUser(currentUser.getUser());
+        accountService.setAuthToken(currentUser.getToken());
+        accountService.setCurrentUser(currentUser.getUser());
+        transferService.setAuthToken(currentUser.getToken());
+        transferService.setCurrentUser(currentUser.getUser());
     }
 
     private void mainMenu() {
@@ -87,21 +93,24 @@ public class App {
         }
     }
 
+    private AccountService accountService = new AccountService();
+    private TransferService transferService = new TransferService();
 	private void viewCurrentBalance() {
 		// TODO Auto-generated method stub
-        int userId = currentUser.getUser().getId();
-
-        accountService.setAuthToken(currentUser.getToken());
-
-        Account account = accountService.getAccountByUserId(userId);
+        int currentUserId = currentUser.getUser().getId();
+        Account account = accountService.getAccountByUserId(currentUserId);
         System.out.println("Your current balance is: $" + account.getBalance());
 
-		
 	}
 
 	private void viewTransferHistory() {
 		// TODO Auto-generated method stub
-		
+        Transfer[] transfers = transferService.listAllTransfers();
+        if (transfers != null) {
+            consoleService.printTransfers(transfers);
+        } else {
+            consoleService.printErrorMessage();
+        }
 	}
 
 	private void viewPendingRequests() {
@@ -109,14 +118,63 @@ public class App {
 		
 	}
 
+    private UserService userService = new UserService();
+    public User[] handleListUsers() {
+        User[] users = userService.listUsers();
+        if (users != null) {
+            consoleService.printUsers(users, currentUser);
+        } else {
+            consoleService.printErrorMessage();
+        }
+        return users;
+    }
 	private void sendBucks() {
-		// TODO Auto-generated method stub
-		
+        // show a list of users
+        User[] users = handleListUsers();
+
+        // picking a user_id and storing the User
+        int response = consoleService.promptForInt("Please Type in a User_Id to SEND (0 to cancel): ");
+        if (response == 0) {
+            return;
+        } else if (response == currentUser.getUser().getId()){
+            System.out.println("Can not send money to self");
+            return;
+        } else if (userService.getUserById(response) == null) {
+            System.out.println("Invalid User-Id");
+            return;
+        }
+
+        BigDecimal amountToSend = consoleService.promptForBigDecimal("How much would you like to SEND: $ ");
+         // Check if the entered number is non-negative
+        if (amountToSend.compareTo(BigDecimal.ZERO) <= 0) {
+            System.out.println("Please enter a positive number.");
+            return;
+        }
+        // initializing a transferDto to SEND
+        // does not include logic to see if user has enough
+        TransferDto transferDto = new TransferDto();
+        transferDto.setTransferType("Send");
+        transferDto.setUserIdFrom(currentUser.getUser().getId());
+        transferDto.setUserIdTo(response);
+        transferDto.setAmount(amountToSend);
+        System.out.println(". . . . processing . . . .");
+        boolean isTransferSuccess = transferService.processTransfer(transferDto);
+        if (isTransferSuccess) {
+            System.out.println("Transfer Approved :)");
+        } else {
+            System.out.println("Transfer Unsuccessful :(");
+        }
 	}
 
 	private void requestBucks() {
-		// TODO Auto-generated method stub
-		
+        // Getting Authentication
+        int currentUserId = currentUser.getUser().getId();
+        userService.setAuthToken(currentUser.getToken());
+
+        // show a list of users
+        handleListUsers();
+
+        transferService.addTransfer(transfer);
 	}
 
 }
