@@ -17,11 +17,6 @@ public class JdbcTransferDao implements TransferDao{
         this.jdbcTemplate = jdbcTemplate;
     }
 
-    @Override
-    public void createTransfer(Transfer transfer) {
-        String sql = "INSERT INTO transfer (transfer_id, transfer_type_id, transfer_status_id, account_from, account_to, amount) VALUES (?, ?, ?, ?, ?, ?)";
-        jdbcTemplate.update(sql, transfer.getTransferId(), transfer.getTransferTypeId(), transfer.getTransferStatusId(), transfer.getAccountFrom(), transfer.getAccountTo(), transfer.getAmount());
-    }
 
     @Override
     public List<Transfer> getTransfersByUserId(int userId) {
@@ -39,7 +34,7 @@ public class JdbcTransferDao implements TransferDao{
     }
 
     @Override
-    public Transfer getTransferByTransferId(int transferId) {
+    public Transfer getTransfersByTransferId(int transferId) {
         String sql = "SELECT transfer_id, transfer_type_id, transfer_status_id, account_from, account_to, amount " +
                 "FROM transfer WHERE transfer_id = ?";
         SqlRowSet result = jdbcTemplate.queryForRowSet(sql, transferId);
@@ -50,42 +45,15 @@ public class JdbcTransferDao implements TransferDao{
         }
         return transfer;
     }
-
     @Override
-    public List<Transfer> getAllTransfers() {
-        String sql = "SELECT transfer_id, transfer_type_id, transfer_status_id, account_from, account_to, amount " +
-                "FROM transfer";
-        SqlRowSet results = jdbcTemplate.queryForRowSet(sql);
-        List<Transfer> transfers = new ArrayList<>();
-
-        while(results.next()) {
-            transfers.add(mapResultToTransfer(results));
-        }
-        return transfers;
-    }
-
-    @Override
-    public List<Transfer> getPendingTransfers(int userId) {
-        String sql = "SELECT transfer_id, transfer_type_id, transfer.transfer_status_id, account_from, account_to, amount " +
-                "FROM transfer " +
-                "JOIN account ON account.account_id = transfer.account_from " +
-                "JOIN transfer_status ON transfer.transfer_status_id = transfer_status.transfer_status_id " +
-                "WHERE user_id = ? AND transfer_status_desc = 'Pending'";
-        SqlRowSet results = jdbcTemplate.queryForRowSet(sql, userId);
-        List<Transfer> transfers = new ArrayList<>();
-
-        while(results.next()) {
-            transfers.add(mapResultToTransfer(results));
-        }
-        return transfers;
-    }
-
-    @Override
-    public void updateTransfer(Transfer transfer) {
-        String sql = "UPDATE transfer " +
-                "SET transfer_status_id = ? " +
-                "WHERE transfer_id = ?";
-        jdbcTemplate.update(sql, transfer.getTransferStatusId(), transfer.getTransferId());
+    public void sendMoney(int accountTo, int accountFrom, BigDecimal amount) {
+        String sql = "BEGIN TRANSACTION;" +
+                "UPDATE account SET balance = balance - ? WHERE account_id = ?;" +
+                "UPDATE account SET balance = balance + ? WHERE account_id = ?;" +
+                "INSERT INTO transfer (transfer_type_id, transfer_status_id, account_from, account_to, amount)" +
+                "VALUES (2, 2, ?, ?, ?);" +
+                "COMMIT;";
+        jdbcTemplate.update(sql, amount, accountFrom, amount, accountTo, accountFrom, accountTo, amount);
     }
 
     private Transfer mapResultToTransfer(SqlRowSet result) {
