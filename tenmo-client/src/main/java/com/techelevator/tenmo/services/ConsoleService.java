@@ -139,4 +139,17 @@ public class ConsoleService {
         System.out.println();
     }
 
+    public void printPendingTransfers(Transfer[] pendingTransfers) {
+        System.out.println("------------------");
+        System.out.println("Pending Transfer Requests");
+        System.out.println("------------------");
+        for (Transfer transfer : pendingTransfers) {
+            System.out.println("Transfer ID: " + transfer.getTransferId() +
+                    " From: " + transfer.getAccountFrom() +
+                    " To: " + transfer.getAccountTo() +
+                    " Amount: $" + transfer.getAmount());
+        }
+        System.out.println();
+    }
+
 }

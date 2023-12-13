@@ -115,7 +115,18 @@ public class App {
 
 	private void viewPendingRequests() {
 		// TODO Auto-generated method stub
-		
+        Transfer[] pendingTransfers = transferService.listPendingTransfers();
+
+        if (pendingTransfers != null && pendingTransfers.length > 0) {
+            consoleService.printPendingTransfers(pendingTransfers);
+
+            int response = consoleService.promptForInt("Enter the Transfer ID to approve/reject (0 to cancel): ");
+            if (response != 0) {
+                handlePendingTransferResponse(response);
+            }
+        } else {
+            System.out.println("No pending transfer requests.");
+        }
 	}
 
     private UserService userService = new UserService();
@@ -167,14 +178,58 @@ public class App {
 	}
 
 	private void requestBucks() {
-        // Getting Authentication
-        int currentUserId = currentUser.getUser().getId();
-        userService.setAuthToken(currentUser.getToken());
+        User[] users = handleListUsers();
 
-        // show a list of users
-        handleListUsers();
+        // Prompt user to select a user to request money from
+        int response = consoleService.promptForInt("Please enter the User Id to request money from (0 to cancel): ");
+        if (response == 0) {
+            return;
+        } else if (response == currentUser.getUser().getId()) {
+            System.out.println("Cannot request money from yourself.");
+            return;
+        } else if (userService.getUserById(response) == null) {
+            System.out.println("Invalid User Id");
+            return;
+        }
 
-        transferService.addTransfer(transfer);
-	}
+        // Prompt user for the amount to request
+        BigDecimal amountToRequest = consoleService.promptForBigDecimal("How much would you like to request: $ ");
+
+        TransferDto transferDto = new TransferDto();
+        transferDto.setTransferType("Request");
+        transferDto.setUserIdFrom(currentUser.getUser().getId());
+        transferDto.setUserIdTo(response);
+        transferDto.setAmount(amountToRequest);
+
+        boolean isRequestSuccess = transferService.processTransfer(transferDto);
+        if (isRequestSuccess) {
+            System.out.println("Transfer request sent successfully!");
+        } else {
+            System.out.println("Transfer request failed.");
+        }
+    }
+
+    private void handlePendingTransferResponse(int transferId) {
+        // Prompt the user for approval or rejection
+        int response = consoleService.promptForInt("Enter 1 to approve, 2 to reject: ");
+        if (response == 1) {
+            // Approve the transfer
+            if (transferService.approveTransfer(transferId)) {
+                System.out.println("Transfer approved successfully!");
+            } else {
+                System.out.println("Error approving the transfer.");
+            }
+        } else if (response == 2) {
+            // Reject the transfer
+            if (transferService.rejectTransfer(transferId)) {
+                System.out.println("Transfer rejected successfully!");
+            } else {
+                System.out.println("Error rejecting the transfer.");
+            }
+        } else {
+            System.out.println("Invalid selection.");
+        }
+
+    }
 
 }

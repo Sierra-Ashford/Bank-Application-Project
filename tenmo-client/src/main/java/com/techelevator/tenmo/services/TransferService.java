@@ -41,10 +41,10 @@ public class TransferService {
     /**
      * List pending transfers
      */
-    public Transfer[] listPendingTransfer() {
+    public Transfer[] listPendingTransfers() {
         Transfer[] transfers = null;
         try {
-            ResponseEntity<Transfer[]> responseEntity = restTemplate.exchange(API_BASE_URL + "1",
+            ResponseEntity<Transfer[]> responseEntity = restTemplate.exchange(API_BASE_URL + "/pending",
                     HttpMethod.GET, makeAuthEntity(), Transfer[].class);
             transfers = responseEntity.getBody();
         } catch (RestClientResponseException | ResourceAccessException e) {
@@ -76,6 +76,30 @@ public class TransferService {
         boolean success = false;
         try {
             restTemplate.exchange(API_BASE_URL, HttpMethod.POST, makeTransferDtoEntity(transferDto), Void.class);
+            success = true;
+        } catch (RestClientResponseException | ResourceAccessException e) {
+            BasicLogger.log(e.getMessage());
+        }
+        return success;
+    }
+
+    public boolean approveTransfer(int transferId) {
+        boolean success = false;
+
+        try {
+            restTemplate.exchange(API_BASE_URL + "approve/" + transferId, HttpMethod.PUT, makeAuthEntity(), Void.class);
+            success = true;
+        } catch (RestClientResponseException | ResourceAccessException e) {
+            BasicLogger.log(e.getMessage());
+        }
+        return success;
+    }
+
+    public boolean rejectTransfer(int transferId) {
+        boolean success = false;
+
+        try {
+            restTemplate.exchange(API_BASE_URL + "reject/" + transferId, HttpMethod.PUT, makeAuthEntity(), Void.class);
             success = true;
         } catch (RestClientResponseException | ResourceAccessException e) {
             BasicLogger.log(e.getMessage());
