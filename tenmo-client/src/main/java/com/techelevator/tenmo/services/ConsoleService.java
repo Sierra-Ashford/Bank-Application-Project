@@ -131,23 +131,41 @@ public class ConsoleService {
         System.out.println("------------------");
         System.out.println("Transfer History");
         System.out.println("------------------");
+        String transactionType;
         TransferType transferType;
         for (Transfer transfer : transfers) {
+            if (transfer.getTransferTypeId() == 1) {
+                transactionType = "Request";
+            } else {
+                transactionType = "Send";
+            }
             System.out.println("From: " + transfer.getAccountFrom() +
-                    " To: " + transfer.getAccountTo() + " Transaction Type: " + transfer.getTransferTypeId() + " Amount: " + transfer.getAmount());
+                    " To: " + transfer.getAccountTo() + " || Transaction Type: " + transactionType + " || Amount: " + transfer.getAmount());
         }
         System.out.println();
     }
-
-    public void printPendingTransfers(Transfer[] pendingTransfers) {
-        System.out.println("------------------");
-        System.out.println("Pending Transfer Requests");
-        System.out.println("------------------");
-        for (Transfer transfer : pendingTransfers) {
-            System.out.println("Transfer ID: " + transfer.getTransferId() +
-                    " From: " + transfer.getAccountFrom() +
-                    " To: " + transfer.getAccountTo() +
-                    " Amount: $" + transfer.getAmount());
+    public void printPendingTransfers(Transfer[] transfers, AuthenticatedUser authenticatedUser) {
+        AccountService account = new AccountService();
+        int userId = authenticatedUser.getUser().getId();
+        Account account1 = account.getAccountByUserId(userId);
+        int accountId = account1.getId();
+        System.out.println("----------------------------------");
+        System.out.println("Requested Payment From Others");
+        System.out.println("----------------------------------");
+        for (Transfer transfer : transfers) {
+            if (transfer.getAccountTo() == accountId) {
+                System.out.println(transfer.getAccountFrom() + " has requested $"
+                                    + transfer.getAmount() + " from you");
+            }
+        }
+        System.out.println("----------------------------------");
+        System.out.println("Requested Payment From You");
+        System.out.println("----------------------------------");
+        for (Transfer transfer : transfers) {
+            if (transfer.getAccountTo() != account.getAccountByUserId(userId).getId()) {
+                System.out.println("You have requested $"
+                        + transfer.getAmount() + " to " + transfer.getAccountTo());
+            }
         }
         System.out.println();
     }

@@ -18,6 +18,9 @@ public class Transfer {
         this.accountTo = accountTo;
         this.amount = amount;
     }
+    public Transfer() {
+
+    }
 
     public int getTransferId() {
         return transferId;

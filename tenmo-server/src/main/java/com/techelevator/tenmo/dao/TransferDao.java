@@ -9,8 +9,8 @@ public interface TransferDao {
 
     List<Transfer> getTransfersByUserId(int userId);
 
-    Transfer getTransfersByTransferId(int transferId);
-
     void sendMoney(int accountTo, int accountFrom, BigDecimal amount);
+    void requestMoney(int accountTo, int accountFrom, BigDecimal amount);
+    List<Transfer> getPendingTransferById(int userId);
 }
 

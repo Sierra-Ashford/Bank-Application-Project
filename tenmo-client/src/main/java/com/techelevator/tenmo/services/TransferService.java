@@ -10,7 +10,7 @@ import org.springframework.web.client.RestClientResponseException;
 import org.springframework.web.client.RestTemplate;
 
 public class TransferService {
-    public String API_BASE_URL = "http://localhost:8080/transfer";
+    public String API_BASE_URL = "http://localhost:8080/transfers";
 
     private final RestTemplate restTemplate = new RestTemplate();
 
@@ -26,11 +26,12 @@ public class TransferService {
     /**
      * List all past transfer
      */
-    public Transfer[] listAllTransfers() {
+    public Transfer[] listOfTransfersByUser(int userId) {
         Transfer[] transfers = null;
         try {
-            ResponseEntity<Transfer[]> responseEntity = restTemplate.exchange(API_BASE_URL,
-                    HttpMethod.GET, makeAuthEntity(), Transfer[].class);
+            ResponseEntity<Transfer[]> responseEntity =
+                    restTemplate.exchange(API_BASE_URL + "/" + userId,
+                            HttpMethod.GET, makeAuthEntity(), Transfer[].class);
             transfers = responseEntity.getBody();
         } catch (RestClientResponseException | ResourceAccessException e) {
             BasicLogger.log(e.getMessage());
@@ -41,11 +42,12 @@ public class TransferService {
     /**
      * List pending transfers
      */
-    public Transfer[] listPendingTransfers() {
+    public Transfer[] listPendingTransfer(int userId) {
         Transfer[] transfers = null;
         try {
-            ResponseEntity<Transfer[]> responseEntity = restTemplate.exchange(API_BASE_URL + "/pending",
-                    HttpMethod.GET, makeAuthEntity(), Transfer[].class);
+            ResponseEntity<Transfer[]> responseEntity =
+                    restTemplate.exchange(API_BASE_URL + "/pending/" + userId,
+                            HttpMethod.GET, makeAuthEntity(), Transfer[].class);
             transfers = responseEntity.getBody();
         } catch (RestClientResponseException | ResourceAccessException e) {
             BasicLogger.log(e.getMessage());
@@ -54,52 +56,12 @@ public class TransferService {
     }
 
     /**
-     * Create a new send/request transfer
-     */
-
-    public Transfer addTransfer(Transfer newTransfer) {
-        Transfer returnedTransfer = null;
-        try {
-            returnedTransfer = restTemplate.postForObject(API_BASE_URL +
-                            newTransfer.getTransferTypeId() + "/" + newTransfer.getTransferStatusId(),
-                    makeTransferEntity(newTransfer), Transfer.class);
-        } catch (RestClientResponseException | ResourceAccessException e) {
-            BasicLogger.log(e.getMessage());
-        }
-        return returnedTransfer;
-    }
-
-    /**
      * Process a transfer with TransferDto
      */
     public boolean processTransfer(TransferDto transferDto) {
         boolean success = false;
         try {
-            restTemplate.exchange(API_BASE_URL, HttpMethod.POST, makeTransferDtoEntity(transferDto), Void.class);
-            success = true;
-        } catch (RestClientResponseException | ResourceAccessException e) {
-            BasicLogger.log(e.getMessage());
-        }
-        return success;
-    }
-
-    public boolean approveTransfer(int transferId) {
-        boolean success = false;
-
-        try {
-            restTemplate.exchange(API_BASE_URL + "approve/" + transferId, HttpMethod.PUT, makeAuthEntity(), Void.class);
-            success = true;
-        } catch (RestClientResponseException | ResourceAccessException e) {
-            BasicLogger.log(e.getMessage());
-        }
-        return success;
-    }
-
-    public boolean rejectTransfer(int transferId) {
-        boolean success = false;
-
-        try {
-            restTemplate.exchange(API_BASE_URL + "reject/" + transferId, HttpMethod.PUT, makeAuthEntity(), Void.class);
+            restTemplate.exchange(API_BASE_URL + "/" + transferDto.getTransferType(), HttpMethod.POST, makeTransferDtoEntity(transferDto), Void.class);
             success = true;
         } catch (RestClientResponseException | ResourceAccessException e) {
             BasicLogger.log(e.getMessage());

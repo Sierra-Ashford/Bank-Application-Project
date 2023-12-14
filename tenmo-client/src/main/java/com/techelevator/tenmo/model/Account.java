@@ -3,16 +3,17 @@ package com.techelevator.tenmo.model;
 import java.math.BigDecimal;
 
 public class Account {
-    private int account_id;
+
+    private int id;
     private int user_id;
     private BigDecimal balance;
 
-    public int getAccount_id() {
-        return account_id;
+    public int getId() {
+        return id;
     }
 
-    public void setAccount_id(int account_id) {
-        this.account_id = account_id;
+    public void setId(int id) {
+        this.id = id;
     }
 
     public int getUser_id() {
@@ -29,5 +30,16 @@ public class Account {
 
     public void setBalance(BigDecimal balance) {
         this.balance = balance;
+    }
+
+
+    @Override
+    public String toString() {
+        return "\n--------------------------------------------" +
+                "\n Account Detail" +
+                "\n--------------------------------------------" +
+                "\n Id: " + id +
+                "\n User_Id: " + user_id +
+                "\n Balance: " + balance;
     }
 }

@@ -42,15 +42,17 @@ public class AccountService {
      * Get Account by User_id
      */
     public Account getAccountByUserId(int id) {
-        HttpHeaders headers = new HttpHeaders();
-        headers.setBearerAuth(authToken);
-        HttpEntity entity = new HttpEntity(headers);
         Account account = null;
         try {
-            account = restTemplate.exchange(API_BASE_URL2 + id, HttpMethod.GET, entity, Account.class).getBody();
+            account = restTemplate.exchange(API_BASE_URL2 + id, HttpMethod.GET, makeAuthEntity(), Account.class).getBody();
         } catch (RestClientResponseException | ResourceAccessException e) {
             BasicLogger.log(e.getMessage());
         }
         return account;
+    }
+    private HttpEntity<Void> makeAuthEntity() {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setBearerAuth(authToken);
+        return new HttpEntity<>(headers);
     }
 }
