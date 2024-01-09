@@ -3,90 +3,134 @@ package com.techelevator.tenmo.controller;
 import com.techelevator.tenmo.dao.AccountDao;
 import com.techelevator.tenmo.dao.TransferDao;
 import com.techelevator.tenmo.dao.UserDao;
-import com.techelevator.tenmo.exception.DaoException;
+import com.techelevator.tenmo.model.TransactionDto;
 import com.techelevator.tenmo.model.Transfer;
 import com.techelevator.tenmo.model.TransferDto;
+import com.techelevator.tenmo.model.TransferStatusDto;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
-import javax.validation.Valid;
 import java.math.BigDecimal;
+import java.security.Principal;
 import java.util.List;
 
 @RestController
 @PreAuthorize("isAuthenticated()")
+@RequestMapping("/transfers")
 public class TransferController {
 
-    private TransferDao transferDao;
-    private AccountDao accountDao;
-    private UserDao userDao;
-    public TransferController(TransferDao transferDao) {
+    private final TransferDao transferDao;
+    private final AccountDao accountDao;
+    private final UserDao userDao;
+
+    public TransferController(TransferDao transferDao, AccountDao accountDao, UserDao userDao) {
         this.transferDao = transferDao;
+        this.accountDao = accountDao;
+        this.userDao = userDao;
     }
-    /**
-     * return a list of transfers of the account
-     */
-    @RequestMapping(path = "/transfers/{userId}", method = RequestMethod.GET)
-    public List<Transfer> listOfTransfersByUser(@PathVariable int userId) {
-        try {
-            List<Transfer> transfers = transferDao.getTransfersByUserId(userId);
-            if (transfers == null) {
-                throw new ResponseStatusException(HttpStatus.NOT_FOUND, "transfer not found.");
+
+    @RequestMapping(path = "", method = RequestMethod.GET)
+    public List<TransactionDto> getTransfers(@RequestParam(required = false) String transferStatus, Principal principal ) {
+        int accountId = accountDao.getAccountIdByUsername(principal.getName());
+        if (transferStatus == null) {
+            return transferDao.findAllTransfers(accountId);
+        } else {
+            return transferDao.getPendingTransfers(transferStatus, accountId);
+        }
+    }
+
+    @ResponseStatus(HttpStatus.CREATED)
+    @RequestMapping(path = "", method = RequestMethod.POST)
+    public void addTransfer(@RequestBody TransferDto transferDto) {
+
+        if (transferDto.getTransferType().equals("Send")){
+
+            boolean isValidTransaction = validateTransfer(transferDto.getUserIdFrom(), transferDto.getUserIdTo(), transferDto.getAmount());
+            if (isValidTransaction) {
+
+                int accountIdFrom = userDao.findAccountIdByUserId(transferDto.getUserIdFrom());
+                accountDao.updateAccountBalance(accountIdFrom, transferDto.getAmount().multiply(new BigDecimal("-1")));
+
+                int accountIdTo = userDao.findAccountIdByUserId(transferDto.getUserIdTo());
+                accountDao.updateAccountBalance(accountIdTo, transferDto.getAmount());
+
+                transferDao.createTransfer(createTransferFromDto(transferDto));
+
             } else {
-                return transfers;
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Insufficient funds.");
             }
-        } catch (DaoException e) {
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "User registration failed.");
+
+        } else if (transferDto.getTransferType().equals("Request")) {
+
+            transferDao.createTransfer(createTransferFromDto(transferDto));
+
+        } else {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid Transfer Type.");
         }
+
+
     }
-    /**
-     * return a list of pending transfers of the account
-     */
-    @RequestMapping(path = "/transfers/pending/{userId}", method = RequestMethod.GET)
-    public List<Transfer> listOfPendingTransfers(@PathVariable int userId) {
-        try {
-            List<Transfer> transfers = transferDao.getPendingTransferById(userId);
-            if (transfers == null) {
-                throw new ResponseStatusException(HttpStatus.NOT_FOUND, "transfer not found.");
+
+    @RequestMapping(path = "/{id}", method = RequestMethod.GET)
+    public TransactionDto getTransfer(@PathVariable int id) {
+        return transferDao.getTransferById(id);
+    }
+
+    @RequestMapping(path = "/{id}", method = RequestMethod.PUT)
+    public void updateTransferStatus(@RequestBody TransferStatusDto transferStatusDto, @PathVariable int id) {
+
+        TransactionDto dto = transferDao.getTransferById(id);
+
+        int userIdFrom = userDao.findIdByUsername(dto.getUserFrom());
+        int userIdTo = userDao.findIdByUsername(dto.getUserTo());
+        BigDecimal transferAmount = dto.getAmount();
+
+        if (transferStatusDto.getTransferStatus().equals("Approved")) {
+
+            boolean isValidTransaction = validateTransfer(userIdFrom, userIdTo, transferAmount);
+            if (isValidTransaction) {
+
+                int accountIdFrom = userDao.findAccountIdByUserId(userIdFrom);
+                accountDao.updateAccountBalance(accountIdFrom, transferAmount.multiply(new BigDecimal("-1")));
+                int accountIdTo = userDao.findAccountIdByUserId(userIdTo);
+                accountDao.updateAccountBalance(accountIdTo, transferAmount);
+
+                transferDao.updateTransfer(id, transferStatusDto.getTransferStatus());
             } else {
-                return transfers;
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Insufficient funds.");
             }
-        } catch (DaoException e) {
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "User registration failed.");
+
+        } else if (transferStatusDto.getTransferStatus().equals("Rejected")) {
+            transferDao.updateTransfer(id, transferStatusDto.getTransferStatus());
+        } else {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid Transfer Status.");
         }
     }
 
-    /**
-     * Update the balance of sender and receiver
-     */
-    @RequestMapping(path = "/transfers/send", method = RequestMethod.POST)
-    public ResponseEntity<String> sendMoney(@RequestBody TransferDto transferDto) {
-        try {
-            transferDao.sendMoney(transferDto.getUserIdTo(), transferDto.getUserIdFrom(), transferDto.getAmount());
-            return new ResponseEntity<>("Money sent successfully", HttpStatus.OK);
-        } catch (Exception e) {
-            return new ResponseEntity<>("Failed to send money: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+    private boolean validateTransfer(int userIdFrom, int userIdTo, BigDecimal amountToTransfer) {
+        boolean isValidTransaction = false;
+        int accountIdFrom = userDao.findAccountIdByUserId(userIdFrom);
+        int accountIdTo = userDao.findAccountIdByUserId(userIdTo);
+        if (amountToTransfer.compareTo(accountDao.getBalance(accountIdFrom)) == 0 || amountToTransfer.compareTo(accountDao.getBalance(accountIdFrom)) == -1 ) {
+            isValidTransaction = true;
         }
+        return isValidTransaction;
     }
 
-    /**
-     * Create a request money method POST
-     */
-    @RequestMapping(path = "/transfers/request", method = RequestMethod.POST)
-    public ResponseEntity<String> requestMoney(@RequestBody TransferDto transferDto) {
-        try {
-            transferDao.requestMoney(transferDto.getUserIdTo(), transferDto.getUserIdFrom(), transferDto.getAmount());
-            return new ResponseEntity<>("Money Requested successfully", HttpStatus.OK);
-        } catch (Exception e) {
-            return new ResponseEntity<>("Failed to Request money: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+    private Transfer createTransferFromDto(TransferDto transferDto) {
+        Transfer transfer = new Transfer();
+        transfer.setTransferType(transferDto.getTransferType());
+        if (transferDto.getTransferType().equals("Send")) {
+            transfer.setTransferStatus("Approved");
         }
+        if (transferDto.getTransferType().equals("Request")) {
+            transfer.setTransferStatus("Pending");
+        }
+        transfer.setAccountFrom(userDao.findAccountIdByUserId(transferDto.getUserIdFrom()));
+        transfer.setAccountTo(userDao.findAccountIdByUserId(transferDto.getUserIdTo()));
+        transfer.setAmount(transferDto.getAmount());
+        return transfer;
     }
-
-    /**
-     * Updating pending requests PUT
-     * Update balance and update transfer table (pending -> approved)
-     */
 }

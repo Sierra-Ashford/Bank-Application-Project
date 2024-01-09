@@ -3,10 +3,8 @@ package com.techelevator.tenmo.model;
 import java.math.BigDecimal;
 
 public class TransferDto {
-    // transferType to see specify sending or requesting
+
     private String transferType;
-    // transferStatus to see all the completed requests vs pending requests
-    private String transferStatus;
     private int userIdFrom;
     private int userIdTo;
     private BigDecimal amount;
@@ -41,13 +39,5 @@ public class TransferDto {
 
     public void setAmount(BigDecimal amount) {
         this.amount = amount;
-    }
-
-    public String getTransferStatus() {
-        return transferStatus;
-    }
-
-    public void setTransferStatus(String transferStatus) {
-        this.transferStatus = transferStatus;
     }
 }

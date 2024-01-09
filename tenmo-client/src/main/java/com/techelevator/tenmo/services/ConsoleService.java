@@ -1,8 +1,10 @@
 package com.techelevator.tenmo.services;
 
 
-import com.techelevator.tenmo.App;
-import com.techelevator.tenmo.model.*;
+import com.techelevator.tenmo.model.AuthenticatedUser;
+import com.techelevator.tenmo.model.Transfer;
+import com.techelevator.tenmo.model.User;
+import com.techelevator.tenmo.model.UserCredentials;
 
 import java.math.BigDecimal;
 import java.util.Scanner;
@@ -10,6 +12,11 @@ import java.util.Scanner;
 public class ConsoleService {
 
     private final Scanner scanner = new Scanner(System.in);
+//    private DemoInterface di = new JjDemo();
+
+//    public ConsoleService() {
+//        di = new JjDemo();
+//    }
 
     public int promptForMenuSelection(String prompt) {
         int menuSelection;
@@ -69,17 +76,6 @@ public class ConsoleService {
         }
     }
 
-//    public BigDecimal promptForBigDecimal(String prompt) {
-//        System.out.print(prompt);
-//        while (true) {
-//            try {
-//                return new BigDecimal(scanner.nextLine());
-//            } catch (NumberFormatException e) {
-//                System.out.println("Please enter a decimal number.");
-//            }
-//        }
-//    }
-
     public BigDecimal promptForBigDecimal(String prompt) {
         System.out.print(prompt);
         while (true) {
@@ -90,84 +86,38 @@ public class ConsoleService {
             }
         }
     }
-//    public BigDecimal promptForBigDecimal(String prompt) {
-//        System.out.print(prompt);
-//        while (true) {
-//            try {
-//                BigDecimal userInput = new BigDecimal(scanner.nextLine());
-//
-//                // Check if the entered number is non-negative
-//                if (userInput.compareTo(BigDecimal.ZERO) >= 0) {
-//                    return userInput;
-//                } else {
-//                    System.out.println("Please enter a non-negative number.");
-//                }
-//            } catch (NumberFormatException e) {
-//                System.out.println("Please enter a valid number.");
-//            }
-//        }
-//    }
 
     public void pause() {
         System.out.println("\nPress Enter to continue...");
+
         scanner.nextLine();
     }
 
     public void printErrorMessage() {
         System.out.println("An error occurred. Check the log for details.");
     }
-    public void printUsers(User[] users, AuthenticatedUser authenticatedUser) {
-        System.out.println("------------------");
-        System.out.println("Id  : Username");
-        System.out.println("------------------");
-        App app = new App();
+
+    public void printUsers(User[] users, AuthenticatedUser currentUser) {
         for (User user : users) {
-            if (user.getId() != authenticatedUser.getUser().getId())
-            System.out.println(user.getId() + ": " + user.getUsername());
+            if (user.getId() != currentUser.getUser().getId())
+                System.out.println(user);
         }
-        System.out.println();
-    }
-    public void printTransfers(Transfer[] transfers) {
-        System.out.println("------------------");
-        System.out.println("Transfer History");
-        System.out.println("------------------");
-        String transactionType;
-        TransferType transferType;
-        for (Transfer transfer : transfers) {
-            if (transfer.getTransferTypeId() == 1) {
-                transactionType = "Request";
-            } else {
-                transactionType = "Send";
-            }
-            System.out.println("From: " + transfer.getAccountFrom() +
-                    " To: " + transfer.getAccountTo() + " || Transaction Type: " + transactionType + " || Amount: " + transfer.getAmount());
-        }
-        System.out.println();
-    }
-    public void printPendingTransfers(Transfer[] transfers, AuthenticatedUser authenticatedUser) {
-        AccountService account = new AccountService();
-        int userId = authenticatedUser.getUser().getId();
-        Account account1 = account.getAccountByUserId(userId);
-        int accountId = account1.getId();
-        System.out.println("----------------------------------");
-        System.out.println("Requested Payment From Others");
-        System.out.println("----------------------------------");
-        for (Transfer transfer : transfers) {
-            if (transfer.getAccountTo() == accountId) {
-                System.out.println(transfer.getAccountFrom() + " has requested $"
-                                    + transfer.getAmount() + " from you");
-            }
-        }
-        System.out.println("----------------------------------");
-        System.out.println("Requested Payment From You");
-        System.out.println("----------------------------------");
-        for (Transfer transfer : transfers) {
-            if (transfer.getAccountTo() != account.getAccountByUserId(userId).getId()) {
-                System.out.println("You have requested $"
-                        + transfer.getAmount() + " to " + transfer.getAccountTo());
-            }
-        }
-        System.out.println();
     }
 
+    public void printTransfers(Transfer[] transfers, AuthenticatedUser currentUser){
+        for(Transfer transfer : transfers) {
+            transfer.setCurrentUser(currentUser.getUser());
+            System.out.println(transfer);
+        }
+    }
+
+    public void printTransferDetails(Transfer transfer){
+
+            System.out.println("Transfer ID: " + transfer.getTransferId());
+            System.out.println("From: " + transfer.getUserFrom());
+            System.out.println("To: " + transfer.getUserTo());
+            System.out.println("Type: " + transfer.getTransferType());
+            System.out.println("Status: " + transfer.getTransferStatus());
+            System.out.println("Amount: " + transfer.getAmount());
+    }
 }

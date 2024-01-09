@@ -13,20 +13,30 @@ import java.util.List;
 @RestController
 @PreAuthorize("isAuthenticated()")
 public class UserController {
-    private UserDao userDao;
+
+    private final UserDao userDao;
+
     public UserController(UserDao userDao) {
         this.userDao = userDao;
     }
-    /**
-     * return a list of users
-     */
+
+//    public UserController(){
+//        UserDao userDao1 = new JdbcUserDao(new JdbcTemplate());
+//        userDao = userDao1;
+//    }
+
     @RequestMapping(path = "/users", method = RequestMethod.GET)
-    public List<User> listOfUsers() {
-        return userDao.getUsers();
+    public  List <User>  getAllUsers() {
+        return userDao.findAll();
     }
+
     @RequestMapping(path = "/users/{id}", method = RequestMethod.GET)
-    public User getUserById(@PathVariable int id) {
+    public User getUser(@PathVariable int id) {
         return userDao.getUserById(id);
     }
 
+    @RequestMapping(path = "/users/{id}/account", method = RequestMethod.GET)
+    public int getUserAccountId(@PathVariable int id) {
+        return userDao.findAccountIdByUserId(id);
+    }
 }

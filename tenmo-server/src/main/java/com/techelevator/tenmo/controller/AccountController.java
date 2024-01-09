@@ -1,39 +1,45 @@
 package com.techelevator.tenmo.controller;
-import javax.validation.Valid;
 
 import com.techelevator.tenmo.dao.AccountDao;
-import com.techelevator.tenmo.exception.DaoException;
-import com.techelevator.tenmo.model.*;
+import com.techelevator.tenmo.model.Account;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.web.bind.annotation.*;
-
-import com.techelevator.tenmo.dao.UserDao;
-import com.techelevator.tenmo.security.jwt.TokenProvider;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.math.BigDecimal;
+
 @RestController
-@PreAuthorize("isAuthenticated()")
+//@PreAuthorize("isAuthenticated()")
 public class AccountController {
+
     private AccountDao accountDao;
 
     public AccountController(AccountDao accountDao) {
         this.accountDao = accountDao;
     }
 
-    @RequestMapping(path = "/accounts/{accountId}", method = RequestMethod.GET)
-    public Account getAccountById(@PathVariable int accountId) {
-        Account account = accountDao.getAccountById(accountId);
-        return account;
+
+//    public AccountController() {
+//         accountDao= new JdbcAccountDao(new JdbcTemplate() );
+//
+//    }
+
+    @RequestMapping(path = "/accounts/{id}", method = RequestMethod.GET)
+    public Account getUserAccount(@PathVariable int id) {
+        Account accountRetrieved = accountDao.getAccountById(id);
+        if (accountRetrieved == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Account not found");
+        } else {
+            return accountRetrieved;
+        }
     }
 
-    @RequestMapping(path = "/accountByUserId/{userId}", method = RequestMethod.GET)
-    public Account getAccountByUserId(@PathVariable int userId) {
-        Account account = accountDao.getAccountByUserId(userId);
-        return account;
+    @RequestMapping(path = "/accounts/{id}/balance", method = RequestMethod.GET)
+    public BigDecimal getAccountBalance(@PathVariable int id) {
+        return accountDao.getBalance(id);
     }
+
 }

@@ -11,50 +11,47 @@ import org.springframework.web.client.RestClientResponseException;
 import org.springframework.web.client.RestTemplate;
 
 public class UserService {
-    public String API_BASE_URL = "http://localhost:8080/users";
 
+    public static final String API_BASE_URL = "http://localhost:8080/users";
     private final RestTemplate restTemplate = new RestTemplate();
 
     private String authToken = null;
     private User currentUser = null;
+
     public void setAuthToken(String authToken) {
         this.authToken = authToken;
     }
+
     public void setCurrentUser(User currentUser) {
         this.currentUser = currentUser;
     }
 
-    /**
-     * List all the users
-     */
-    public User[] listUsers() {
-        HttpHeaders headers = new HttpHeaders();
-        headers.setBearerAuth(authToken);
-        HttpEntity entity = new HttpEntity(headers);
+    public Integer getAccountId(int userId) {
+        Integer accountId = null;
+        try{
+            ResponseEntity<Integer> response = restTemplate.exchange(API_BASE_URL + "/" + userId + "/account", HttpMethod.GET, makeAuthEntity(), Integer.class);
+            accountId = response.getBody();
+
+        } catch (RestClientResponseException | ResourceAccessException e) {
+            BasicLogger.log(e.getMessage());
+        }
+        return accountId;
+    }
+
+    public User[] getUsers() {
         User[] users = null;
         try {
-            users = restTemplate.exchange(API_BASE_URL, HttpMethod.GET, entity, User[].class).getBody();
-        } catch (RestClientResponseException | ResourceAccessException e) {
+            ResponseEntity<User[]> response = restTemplate.exchange(API_BASE_URL, HttpMethod.GET, makeAuthEntity(), User[].class);
+            users = response.getBody();
+        }  catch (RestClientResponseException | ResourceAccessException e) {
             BasicLogger.log(e.getMessage());
         }
         return users;
     }
-    /**
-     * Get User by id
-     */
-    public User getUserById(int id) {
+
+    private HttpEntity<Void> makeAuthEntity() {
         HttpHeaders headers = new HttpHeaders();
         headers.setBearerAuth(authToken);
-        HttpEntity entity = new HttpEntity(headers);
-        User user = null;
-        try {
-            ResponseEntity<User> responseEntity
-                    = restTemplate.exchange(API_BASE_URL + "/" + id, HttpMethod.GET, entity, User.class);
-            user = responseEntity.getBody();
-        } catch (RestClientResponseException | ResourceAccessException e) {
-            BasicLogger.log(e.getMessage());
-        }
-        return user;
-
+        return new HttpEntity<>(headers);
     }
 }
